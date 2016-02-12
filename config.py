@@ -19,8 +19,8 @@ CONFIG = {
         'class_': oauth2.Facebook,
         
         # Facebook is an AuthorizationProvider too.
-        'consumer_key': '1529132127366244',
-        'consumer_secret': 'f3a21526aa509d31d2d5a676c69c4b18',
+        'consumer_key': '464673630405837',
+        'consumer_secret': '2200ad4f4bbdc63c3f24d76a0cc99ebf',
         
         # But it is also an OAuth 2.0 provider and it needs scope.
         'scope': ['user_about_me', 'email', 'user_posts'],
@@ -49,9 +49,9 @@ CONFIG = {
 '''
 
 Google dash: https://console.cloud.google.com/apis/credentials?project=cefy-1218&authuser=3
-Twitter dash: 
+Twitter dash: https://apps.twitter.com/app/7193090/settings
 LinkedIN dash: https://www.linkedin.com/developer/apps/4788841/auth 
-Facebook dash:
+Facebook dash: 
 Instagram dash:
 
 
