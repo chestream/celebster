@@ -7,3 +7,4 @@ pyparsing==2.0.3
 oauth2==1.5.211
 oauth2client==1.5.2
 Authomatic==0.1.0.post1
+gunicorn==19.4.1
