@@ -3,7 +3,6 @@ Jinja2==2.7.3
 Werkzeug==0.10.4
 oauthlib==0.7.2
 requests-oauthlib==0.6.0
-pyparsing==2.0.3
 oauth2==1.5.211
 oauth2client==1.5.2
 Authomatic==0.1.0.post1

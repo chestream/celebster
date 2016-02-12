@@ -8,21 +8,6 @@ from flask_oauthlib.client import OAuth
 
 from config import CONFIG
 
-from parse_rest.connection import register
-from parse_rest.datatypes import Object, GeoPoint
-from parse_rest.user import User
-
-parse_credentials = {
-    "application_id": "M5tnZk2K6PdF82Ra8485bG2VQwPjpeZLeL96VLPj",
-    "rest_api_key": "VBGkzL4uHsOw0K1q33gHS4Qk2FWEucRHMHqT69ex",
-    "master_key": "r9XwzOtLCoduZgmcU27Kc0sbexW4jWTOuBHStUFb",
-}
-
-register(parse_credentials["application_id"], parse_credentials["rest_api_key"])
-
-class cefy(Object):
-    pass
-
 app = Flask(__name__)
 app.secret_key = 'development'
 
