@@ -7,6 +7,9 @@ from authomatic import Authomatic
 from flask_oauthlib.client import OAuth
 
 from config import CONFIG
+from firebase import firebase
+
+firebase = firebase.FirebaseApplication('https://cefy.firebaseio.com', None)
 
 app = Flask(__name__)
 app.secret_key = 'development'
@@ -15,6 +18,13 @@ app.secret_key = 'development'
 authomatic = Authomatic(CONFIG, 'your secret string', report_errors=False)
 oauth = OAuth(app)
 
+from parse_rest.connection import register
+from parse_rest.datatypes import Object, GeoPoint
+from parse_rest.user import User
+
+
+class cefy(Object):
+    pass
 
 linkedin = oauth.remote_app(
     'linkedin',

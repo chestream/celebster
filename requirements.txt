@@ -9,3 +9,5 @@ Authomatic==0.1.0.post1
 gunicorn==19.4.1
 flask_oauthlib
 python-openid==2.2.5
+python-firebase
+git+https://github.com/dgrtwo/ParsePy.git
