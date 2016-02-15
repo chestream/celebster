@@ -32,6 +32,7 @@ parse_credentials = {
 
 register(parse_credentials["application_id"], parse_credentials["rest_api_key"])
 
+SERVER_URL = ''
 
 class celebster(Object):
     pass
@@ -176,4 +177,4 @@ def before_request():
 
 # Run the app.
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+    app.run(debug=True,host='0.0.0.0')
