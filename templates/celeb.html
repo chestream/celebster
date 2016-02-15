@@ -1,0 +1,20 @@
+{# index.html #}
+{% extends "base.html" %}
+{% block body %}
+    
+    
+    <!--Links to the Login handler-->
+    
+    
+    <br><br>
+
+    <h1> Hi, </h1>
+    <p>Someone has sent you a video message, if you're {{username}}, please login to view it.</p>
+
+    <br><br><br><br><br>
+    <a class="btn btn-block btn-social btn-twitter btn-lg" href="/celeblogin/{{username}}/{{objectId}}">
+        <span class="fa fa-twitter"></span> Sign in with Twitter
+    </a>
+    
+
+{% endblock %}

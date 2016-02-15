@@ -1,0 +1,14 @@
+{# index.html #}
+{% extends "base.html" %}
+{% block body %}
+    
+    <p>Hi, @{{c.celeb}}, here's what @{{c.pleb}} has to say. </p>
+
+    <video width="400" controls loop="true">
+      <source src="{{c.video_url}}" type="video/mp4">
+      <source src="{{c.video_url}}" type="video/webm">
+    </video>
+    
+    <p>Hey @{{c.celeb}}, how about sending a video replay back to @{{c.pleb}}, click here.</p>
+
+{% endblock %}

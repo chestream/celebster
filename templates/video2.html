@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>WebRTC Audio+Video Recording using RecordRTC &reg; Muaz Khan</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="author" type="text/html" href="https://plus.google.com/+MuazKhan">
+    <meta name="author" content="Muaz Khan">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <link rel="stylesheet" href="//cdn.webrtc-experiment.com/style.css">
+
+    <style>
+    video {
+        max-width: 100%;
+        vertical-align: bottom;
+    }
+    input {
+        border: 1px solid #d9d9d9;
+        border-radius: 1px;
+        font-size: 2em;
+        margin: .2em;
+        width: 30%;
+    }
+    p,
+    .inner {
+        padding: 1em;
+    }
+    li {
+        border-bottom: 1px solid rgb(189, 189, 189);
+        border-left: 1px solid rgb(189, 189, 189);
+        padding: .5em;
+    }
+    label {
+        display: inline-block;
+        width: 8em;
+    }
+    </style>
+    <script>
+        document.createElement('article');
+        document.createElement('footer');
+    </script>
+    <script src="https://cdn.webrtc-experiment.com/RecordRTC.js"></script>
+    <!-- for Edige/FF/Chrome/Opera/etc. getUserMedia support -->
+    <script src="https://cdn.rawgit.com/webrtc/adapter/master/adapter.js"></script>
+</head>
+
+<body>
+    <article>
+
+        {% if result is not defined %}
+            {% set result = {'user':{'name':''}} %}
+        {% endif %}
+
+        {% if result %}
+            {% if result.user %}
+                <h1>Hi {{ result.user.name }}</h1>
+            {% endif %}
+        {% endif %}
+
+        
+        <hr>
+        <input id='celeb' type="text" placeholder="Recipient Username"></input><br>
+
+        <header style="text-align: center;">
+            
+
+        <section class="experiment">
+            <h2 class="header">Record Your Message</h2>
+            <div class="inner">
+                <br />
+                <video id="video"></video>
+                <hr />
+                <button id="start-recording">Start</button>
+                <button id="stop-recording" disabled>Stop</button>
+                <button id="send-recording" disabled>Send</button>
+                <br />
+            </div>
+        </section>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-beta1/jquery.js"></script>
+        <script>
+        function captureUserMedia(mediaConstraints, successCallback, errorCallback) {
+            navigator.mediaDevices.getUserMedia(mediaConstraints).then(successCallback).catch(errorCallback);
+        }
+
+        var videoElement = document.getElementById('video');
+
+        var startRecording = document.getElementById('start-recording');
+        var stopRecording = document.getElementById('stop-recording');
+        var sendRecording = document.getElementById('send-recording');
+
+        startRecording.onclick = function() {
+            startRecording.disabled = true;
+            stopRecording.disabled = false;
+
+            captureUserMedia00(function(stream) {
+                window.audioVideoRecorder = window.RecordRTC(stream, {
+                    type: 'video'
+                });
+                window.audioVideoRecorder.startRecording();
+            });
+        };
+
+        stopRecording.onclick = function() {
+            stopRecording.disabled = true;
+            startRecording.disabled = false;
+            sendRecording.disabled = false;
+
+            window.audioVideoRecorder.stopRecording(function(url) {
+                
+                videoElement.src = url;
+                videoElement.muted = false;
+                videoElement.play();
+
+                videoElement.onended = function() {
+                    videoElement.pause();
+
+                    // dirty workaround for: "firefox seems unable to playback"
+                    videoElement.src = URL.createObjectURL(audioVideoRecorder.getBlob());
+                    download(URL.createObjectURL(audioVideoRecorder.getBlob()));
+                };
+            });
+        };
+
+        sendRecording.onclick = function() {
+            celeb = $('#celeb').val();
+            pleb = "{{ result.user.username }}";
+            console.log(celeb + pleb);
+            status = "@"+celeb+", you have a new video message from @"+pleb;
+            window.location.replace("http://127.0.0.1:8080/gtweet?status="+status+"&pleb="+pleb+"&celeb="+celeb+"&file_name="+file_name);
+        };
+
+        function captureUserMedia00(callback) {
+            captureUserMedia({
+                audio: true,
+                video: true
+            }, function(stream) {
+                videoElement.src = URL.createObjectURL(stream);
+                videoElement.muted = true;
+                videoElement.controls = true;
+                videoElement.play();
+
+                callback(stream);
+            }, function(error) {
+                alert(JSON.stringify(error));
+            });
+        }
+
+        function blobToDataURL(blob, callback) {
+            var a = new FileReader();
+            a.onload = function(e) {callback(e.target.result);}
+            a.readAsDataURL(blob);
+        }
+
+        function download(blob_data){
+            
+            blobToDataURL(blob, function(data_url){
+                var fd = new FormData();
+                fd.append('name', 'test.mp4');
+                fd.append('data_url', data_url);
+                $.ajax({
+                    type: 'POST',
+                    url: '/v',
+                    data: fd,
+                    processData: false,
+                    contentType: false
+                }).done(function(data) {
+                       console.log(data);
+                });
+
+            });
+            
+        }
+
+
+        </script>
+
+        
+    </article>
+
+    
+</body>
+
+</html>

@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 
-from flask import Flask, render_template, request, make_response, session, jsonify, redirect, url_for
+from flask import Flask,g, render_template, request, make_response, session, jsonify, redirect, url_for,redirect
 from authomatic.adapters import WerkzeugAdapter
 from authomatic import Authomatic
-
+import os
 from flask_oauthlib.client import OAuth
-
+import base64
+import time
+import tweepy
 from config import CONFIG
-from firebase import firebase
 
-firebase = firebase.FirebaseApplication('https://cefy.firebaseio.com', None)
+from data_uri import DataURI
 
 app = Flask(__name__)
 app.secret_key = 'development'
+app.config['UPLOAD_FOLDER'] = 'video_uploads/'
 
 # Instantiate Authomatic.
 authomatic = Authomatic(CONFIG, 'your secret string', report_errors=False)
@@ -22,145 +24,155 @@ from parse_rest.connection import register
 from parse_rest.datatypes import Object, GeoPoint
 from parse_rest.user import User
 
+parse_credentials = {
+    "application_id": "M5tnZk2K6PdF82Ra8485bG2VQwPjpeZLeL96VLPj",
+    "rest_api_key": "VBGkzL4uHsOw0K1q33gHS4Qk2FWEucRHMHqT69ex",
+    "master_key": "r9XwzOtLCoduZgmcU27Kc0sbexW4jWTOuBHStUFb",
+}
 
-class cefy(Object):
+register(parse_credentials["application_id"], parse_credentials["rest_api_key"])
+
+
+class celebster(Object):
     pass
 
-linkedin = oauth.remote_app(
-    'linkedin',
-    consumer_key=CONFIG['linkedin']['consumer_key'],
-    consumer_secret=CONFIG['linkedin']['consumer_secret'],
-    request_token_params={
-        'scope': 'r_basicprofile,r_emailaddress',
-        'state': 'RandomString',
-    },
-    base_url='https://api.linkedin.com/v1/',
-    request_token_url=None,
-    access_token_method='POST',
-    access_token_url='https://www.linkedin.com/uas/oauth2/accessToken',
-    authorize_url='https://www.linkedin.com/uas/oauth2/authorization',
-)
 
-google = oauth.remote_app(
-    'google',
-    consumer_key=CONFIG['google']['consumer_key'],
-    consumer_secret=CONFIG['linkedin']['consumer_secret'],
-    request_token_params={
-        'scope': 'email'
-    },
-    base_url='https://www.googleapis.com/oauth2/v1/',
-    request_token_url=None,
-    access_token_method='POST',
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
+class Bot():
+    def __init__(self):
+        self.consumer_key = 'qzfWazX1fmnkBLO8RKgWIQLgg'
+        self.consumer_secret =  'ZQWbRLEYyHVhL3DswkluLdKvP1bVd46hnq1sxjiUH3SD6LljWm'
+        self.access_token = '2999442824-jWuQzH3drHM4cIh2ZKAjNevebqMjZ6E1QkXD4yT'
+        self.access_token_secret = 'SVHD6yZCkCejaVbYFZQ3kiSWM8LvzgoTErCYT6tsWbONU'
+        auth = tweepy.OAuthHandler(self.consumer_key, self.consumer_secret)
+        auth.set_access_token(self.access_token, self.access_token_secret)
+        self.api = tweepy.API(auth)
+
+twitter = oauth.remote_app(
+    'twitter',
+    consumer_key='V6WiB2ogb1fr16W93wCO05rRR',
+    consumer_secret='teUL3N96RYcXELar1FH9qy14LiW26kS0RD8UWprEm4vbNRWwRH',
+    base_url='https://api.twitter.com/1.1/',
+    request_token_url='https://api.twitter.com/oauth/request_token',
+    access_token_url='https://api.twitter.com/oauth/access_token',
+    authorize_url='https://api.twitter.com/oauth/authenticate',
 )
 
 @app.route('/')
 def index():
-    """
-    Home handler
-    """
-    
     return render_template('index.html')
 
 
-@app.route('/login/<provider_name>/', methods=['GET', 'POST'])
-def login(provider_name):
-    """
-    Login handler, must accept both GET and POST to be able to use OpenID.
-    """
+@app.route('/v',methods=['GET', 'POST'])
+def video():  
+    if request.method == 'GET':
+        response = make_response()
     
-    if provider_name == 'linkedin':
-        return linkedin.authorize(callback=url_for('authorized_linkedin', _external=True))
+        result = authomatic.login(WerkzeugAdapter(request, response), 'tw')
+        if result:
+            if result.user:
+                result.user.update()
+                file_name = ''
+                return render_template('video2.html', result=result,file_name=file_name)
+        
+        return response
+
+    else:
+        #post endpoint for saving the video
+        data_url = request.form['data_url']
+        epoch = str(int(time.time()*100))
+        file_name = '%s.webm'%epoch
+
+        video_file = open(os.path.join(app.config['UPLOAD_FOLDER'], file_name), 'wb')
+        # video_file.write(data_url)
+
+        uri = DataURI(data_url)
+
+        video_file.write(uri.data)
+        return render_template('video2.html',file_name=file_name)
 
 
-    if provider_name == 'google':
-        return google.authorize(callback=url_for('authorized_google', _external=True))
+@app.route('/@/<username>/<objectId>')
+def celebPage(username,objectId):
+    return render_template('celeb.html',username=username,objectId=objectId)
 
-
-    # We need response object for the WerkzeugAdapter.
+@app.route('/celeblogin/<username>/<objectId>')
+def celeblogin(username,objectId):
     response = make_response()
     
-    # Log the user in, pass it the adapter and the provider name.
-    result = authomatic.login(WerkzeugAdapter(request, response), provider_name)
-    
-    # If there is no LoginResult object, the login procedure is still pending.
+    result = authomatic.login(WerkzeugAdapter(request, response), 'tw')
     if result:
         if result.user:
-            # We need to update the user to get more info.
             result.user.update()
-        
-        if provider_name == 'tw':
-            user_data = result.user.data
-            tweets = result.provider.access('https://api.twitter.com/1.1/statuses/user_timeline.json?count=1000').data
-            favorites = result.provider.access('https://api.twitter.com/1.1/favorites/list.json?count=1000').data
-            mentions = result.provider.access('https://api.twitter.com/1.1/statuses/mentions_timeline.json?count=1000').data
-            messages = result.provider.access('https://api.twitter.com/1.1/direct_messages/sent.json?count=1000').data
-            following = result.provider.access('https://api.twitter.com/1.1/friends/ids.json').data
-            lists = result.provider.access('https://api.twitter.com/1.1/lists/list.json').data
-
-            twitter_dict= {}
-            twitter_dict['user_data'] = user_data
-            twitter_dict['tweets'] = tweets
-            twitter_dict['favorites'] = favorites
-            twitter_dict['mentions'] = mentions
-            twitter_dict['messages'] = messages
-            twitter_dict['following'] = following
-            twitter_dict['lists'] = lists
-
-            
-
-        # The rest happens inside the template.
-        return render_template('login.html', result=result)
-    
-    # Don't forget to return the response.
+            if result.user.username == username:
+                c = celebster.Query.get(objectId=objectId)
+                return render_template('player.html',c=c)
+            else:
+                return render_template('badlogin.html', result=result)
     return response
 
 
-@app.route('/login/authorized_linkedin')
-def authorized_linkedin():
-    resp = linkedin.authorized_response()
-    if resp is None:
-        return 'Access denied: reason=%s error=%s' % (
-            request.args['error_reason'],
-            request.args['error_description']
-        )
-    session['linkedin_token'] = (resp['access_token'], '')
-    me = linkedin.get('people/~:(id,first-name,last-name,headline,industry,num-connections,num-connections-capped,summary,specialties,positions,email-address,picture-url,location)')
-    return jsonify(me.data)
+#todo send tweets from user's own profile
+@app.route('/tweet', methods=['POST'])
+def tweet():
+    if g.user is None:
+        return redirect(url_for('login', next=request.url))
+    status = request.form['tweet']
+    if not status:
+        return redirect(url_for('index'))
+    resp = twitter.post('statuses/update.json', data={
+        'status': status
+    })
+    if resp.status == 403:
+        flash('Your tweet was too long.')
+    elif resp.status == 401:
+        flash('Authorization error with Twitter.')
+    else:
+        flash('Successfully tweeted your tweet (ID: #%s)' % resp.data['id'])
+    return redirect(url_for('index'))
 
-@app.route('/login/authorized_google')
-def authorized_google():
-    resp = google.authorized_response()
-    if resp is None:
-        return 'Access denied: reason=%s error=%s' % (
-            request.args['error_reason'],
-            request.args['error_description']
-        )
-    session['google_token'] = (resp['access_token'], '')
-    me = google.get('userinfo')
-    return jsonify({"data": me.data})
+@app.route('/glogin')
+def glogin():
+    callback_url = url_for('oauthorized', next=request.args.get('next'))
+    return twitter.authorize(callback=callback_url or request.referrer or None)
 
-@linkedin.tokengetter
-def get_linkedin_oauth_token():
-    return session.get('linkedin_token')
 
-@google.tokengetter
-def get_google_oauth_token():
-    return session.get('google_token')
+@app.route('/gtweet')
+def gtweet():
+    status_update = request.args.get('status')
+    pleb = request.args.get('pleb')
+    celeb = request.args.get('celeb')
+    file_name = request.args.get('file_name')
+    b = Bot()
+    api = b.api
 
-def change_linkedin_query(uri, headers, body):
-    auth = headers.pop('Authorization')
-    headers['x-li-format'] = 'json'
-    if auth:
-        auth = auth.replace('Bearer', '').strip()
-        if '?' in uri:
-            uri += '&oauth2_access_token=' + auth
-        else:
-            uri += '?oauth2_access_token=' + auth
-    return uri, headers, body
+    v = celebster(pleb=pleb,celeb=celeb)
+    v.save()
 
-linkedin.pre_request = change_linkedin_query
+    our_url = " %s/@/%s/%s"%(SERVER_URL,celeb,v.objectId)
+    status_update = status_update + our_url
+
+    t = api.update_status(status=status_update)
+
+    v.tweet_id = str(t.id)
+    v.video_url = "http://%s/celebster/%s"%(SERVER_URL,file_name)
+    v.save()
+
+    return redirect('https://twitter.com/statuses/'+str(t.id))
+
+
+@twitter.tokengetter
+def get_twitter_token():
+    if 'twitter_oauth' in session:
+        resp = session['twitter_oauth']
+        return resp['oauth_token'], resp['oauth_token_secret']
+
+
+@app.before_request
+def before_request():
+    g.user = None
+    if 'twitter_oauth' in session:
+        g.user = session['twitter_oauth']
+
 
 # Run the app.
 if __name__ == '__main__':
